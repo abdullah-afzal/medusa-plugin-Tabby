@@ -1,5 +1,6 @@
 import {
     AbstractPaymentProcessor,
+    CartService,
     PaymentProcessorContext,
     PaymentProcessorError,
     PaymentProcessorSessionResponse,
@@ -10,11 +11,13 @@ import { humanizeAmount } from "medusa-core-utils"
 import { merchant } from "../types/merchants";
 
 class MyPaymentProcessor extends AbstractPaymentProcessor {
+    protected readonly cartService_: CartService;
     merchants: merchant[];
     constructor(container, options) {
         super(container)
         // options contains plugin options
         this.merchants = options.merchants
+        this.cartService_ = container.cartService;
       }
 
 
@@ -86,41 +89,43 @@ class MyPaymentProcessor extends AbstractPaymentProcessor {
     async initiatePayment(context: PaymentProcessorContext): Promise<PaymentProcessorError | PaymentProcessorSessionResponse> {
 
 
-        const price = context.amount / 100;
-        const priceString = price.toString();
-        const formattedPrice = priceString.slice(0, 3) + "." + priceString.slice(3);
-        const success = `${process.env.WEB_ENDPOINT}/success`;
+        const cart = await this.cartService_.retrieveWithTotals(
+            context.resource_id
+          );
+        // const price = context.amount / 100;
+        // const priceString = price.toString();
+        // const formattedPrice = priceString.slice(0, 3) + "." + priceString.slice(3);
+        // const success = `${process.env.WEB_ENDPOINT}/success`;
         const currency= context.currency_code;
-        console.log(context.customer)
-        const country = context.customer.billing_address?.country_code;
+        // console.log(context.customer)
+        // const country = context.customer.billing_address?.country_code;
         const merchant = this.merchants.find((merchant) => merchant.currency === currency.toUpperCase()) 
                         || this.merchants.find((merchant) => merchant.type === "DEFAULT");
         
         const data = {
             "payment": {
-                "amount": price,
+                "amount": humanizeAmount(context.amount, context.currency_code),
                 "currency": merchant.currency,
                 "buyer": {
-                    "phone": `${context.customer?.phone}`|| null,
+                    "phone": `${cart.shipping_address?.phone}`|| null,
                     "email": context.email,
-                    "name": `${context.customer?.first_name} ${context.customer?.last_name}` || null,
+                    "name": `${cart.shipping_address?.first_name+" "+cart.shipping_address?.last_name}` || null,
                 },
                 "shipping_address": {
-                    "city": `${context.billing_address?.city}`|| null,
-                    "address": `${context.billing_address?.address_1}`|| null,
-                    "zip": context.billing_address?.postal_code || null
+                    "city": `${cart.shipping_address?.city}`|| null,
+                    "address": `${cart.shipping_address?.address_1}`|| null,
+                    "zip": cart.shipping_address?.postal_code || null
                 },
                 "order": {
                     "reference_id": context.resource_id,
-                    "items": [
-                        {
-                            "title": null,
-                            "quantity": 1,
-                            "unit_price": "0.00",
-                            "category": null,
-                        
-                        }
-                    ]
+                    "items": cart.items.map((item) => {
+                        return {
+                            title: item.title,
+                            quantity: item.quantity,
+                            unit_price: item.unit_price,
+                            category: item?.variant?.product?.categories?.map((category)=>category.name+" ") || null,
+                        };
+                      })
                 },
                 "buyer_history": {
                     "registered_since": "2019-08-24T14:15:22Z",
