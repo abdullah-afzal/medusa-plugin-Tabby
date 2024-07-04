@@ -6,7 +6,8 @@ import type {
   } from "@medusajs/medusa";
   
   export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
-  const id= req.params.id;
+    //@ts-ignore
+  const id= req.body.id;
     
     const cartService: CartService = req.scope.resolve("cartService");
     const orderService: OrderService = req.scope.resolve("orderService");
