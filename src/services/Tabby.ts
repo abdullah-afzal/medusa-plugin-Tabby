@@ -128,13 +128,13 @@ class MyPaymentProcessor extends AbstractPaymentProcessor {
                       })
                 },
                 "buyer_history": {
-                    "registered_since": "2019-08-24T14:15:22Z",
+                    "registered_since": new Date().toISOString(),
                     "loyalty_level": 0,
                 },
                 "order_history": [
                     {
-                        "purchased_at": "2019-08-24T14:15:22Z",
-                        "amount": "100.00",
+                        "purchased_at": new Date().toISOString(),
+                        "amount": humanizeAmount(context.amount, context.currency_code),
                         "status": "new",
 
                     }
