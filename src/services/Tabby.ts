@@ -5,6 +5,9 @@ import {
     PaymentProcessorError,
     PaymentProcessorSessionResponse,
     PaymentSessionStatus,
+    ProductService,
+    CustomerService,
+    OrderService
 } from "@medusajs/medusa";
 import axios, { AxiosResponse } from "axios";
 import { humanizeAmount } from "medusa-core-utils"
@@ -12,12 +15,18 @@ import { merchant } from "../types/merchants";
 
 class MyPaymentProcessor extends AbstractPaymentProcessor {
     protected readonly cartService_: CartService;
+    protected readonly productService_: ProductService;
+    protected readonly customerService_: CustomerService;
+    protected readonly orderService_: OrderService
     merchants: merchant[];
     constructor(container, options) {
         super(container)
         // options contains plugin options
         this.merchants = options.merchants
         this.cartService_ = container.cartService;
+        this.productService_ = container.productService;
+        this.customerService_ = container.customerService;
+        this.orderService_ = container.orderService;
       }
 
 
@@ -92,6 +101,8 @@ class MyPaymentProcessor extends AbstractPaymentProcessor {
         const cart = await this.cartService_.retrieveWithTotals(
             context.resource_id
           );
+        const customer = await this.customerService_.listByEmail(cart.email, {relations:["orders"]});
+        const orders = await Promise.all(customer[0].orders.map(async (order)=>await this.orderService_.retrieveWithTotals(order.id)))
         // const price = context.amount / 100;
         // const priceString = price.toString();
         // const formattedPrice = priceString.slice(0, 3) + "." + priceString.slice(3);
@@ -118,29 +129,27 @@ class MyPaymentProcessor extends AbstractPaymentProcessor {
                 },
                 "order": {
                     "reference_id": context.resource_id,
-                    "items": cart.items.map((item) => {
+                    "items": await Promise.all(cart.items.map(async (item) => {
+                        const { categories } = await this.productService_.retrieve(item.variant.product_id, { relations: ["categories"] });
+                        const categoryString = categories.map((category) => category.name).join(",");
                         return {
-                            title: item.title,
-                            quantity: item.quantity,
-                            unit_price: item.unit_price,
-                            category: item?.variant?.product?.categories?.map((category)=>category.name+" ") || null,
+                          title: item.title,
+                          quantity: item.quantity,
+                          unit_price: item.unit_price,
+                          category: categoryString,
                         };
-                      })
+                      }))
                 },
                 "buyer_history": {
-                    "registered_since": new Date().toISOString(),
-                    "loyalty_level": 0,
+                    "registered_since": customer[0].created_at || new Date().toISOString(),
+                    "loyalty_level": customer[0].orders.length || 0,
                 },
-                "order_history": [
-                    {
-                        "purchased_at": new Date().toISOString(),
-                        "amount": humanizeAmount(context.amount, context.currency_code),
-                        "status": "new",
-
-                    }
-                ],
-
-
+                
+                "order_history": orders.slice(-10).map((order) => ({
+                  "purchased_at": order.created_at,
+                  "amount": humanizeAmount(order.total, order.currency_code),
+                  "status": order.status === "pending" ? "processing" : order.status === "completed" ? "complete" : order.status === "canceled" ? "canceled" : "unknown",
+                }))
             },
             "lang": "ar",
             "merchant_code": merchant.merchant_code,
