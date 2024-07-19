@@ -155,7 +155,7 @@ class MyPaymentProcessor extends AbstractPaymentProcessor {
                     "status": "new",
                 }]
             },
-            "lang": "ar",
+            "lang": context.context.lang?context.context.lang:"ar",
             "merchant_code": merchant.merchant_code,
             "merchant_urls": {
                 "success": `${process.env.WEB_ENDPOINT}/checkout?paymentStatus=approved&`,
