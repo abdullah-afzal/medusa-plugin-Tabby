@@ -145,11 +145,15 @@ class MyPaymentProcessor extends AbstractPaymentProcessor {
                     "loyalty_level": customer[0].orders.length || 0,
                 },
                 
-                "order_history": orders.slice(-10).map((order) => ({
+                "order_history": orders.length>0?orders.slice(-10).map((order) => ({
                   "purchased_at": order.created_at,
                   "amount": humanizeAmount(order.total, order.currency_code),
                   "status": order.status === "pending" ? "processing" : order.status === "completed" ? "complete" : order.status === "canceled" ? "canceled" : "unknown",
-                }))
+                })):[{
+                    "purchased_at": new Date().toISOString(),
+                    "amount": humanizeAmount(context.amount, context.currency_code),
+                    "status": "new",
+                }]
             },
             "lang": "ar",
             "merchant_code": merchant.merchant_code,
