@@ -102,7 +102,7 @@ class MyPaymentProcessor extends AbstractPaymentProcessor {
             context.resource_id
           );
         const customer = await this.customerService_.listByEmail(cart.email, {relations:["orders"]});
-        const orders = await Promise.all(customer[0].orders.map(async (order)=>await this.orderService_.retrieveWithTotals(order.id)))
+        const orders = await Promise.all(customer[0].orders.map(async (order)=>await this.orderService_.retrieveWithTotals(order.id,{relations:["shipping_address"]})))
         // const price = context.amount / 100;
         // const priceString = price.toString();
         // const formattedPrice = priceString.slice(0, 3) + "." + priceString.slice(3);
