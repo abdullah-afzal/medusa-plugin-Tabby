@@ -112,7 +112,7 @@ class MyPaymentProcessor extends AbstractPaymentProcessor {
         // const country = context.customer.billing_address?.country_code;
         const merchant = this.merchants.find((merchant) => merchant.currency === currency.toUpperCase()) 
                         || this.merchants.find((merchant) => merchant.type === "DEFAULT");
-        
+        const country = cart.shipping_address.country_code;
         const data = {
             "payment": {
                 "amount": humanizeAmount(context.amount, context.currency_code),
@@ -178,9 +178,9 @@ class MyPaymentProcessor extends AbstractPaymentProcessor {
             "lang": context.context.lang?context.context.lang:"ar",
             "merchant_code": merchant.merchant_code,
             "merchant_urls": {
-                "success": `${process.env.WEB_ENDPOINT}/checkout?paymentStatus=approved&`,
-                "cancel": `${process.env.WEB_ENDPOINT}/checkout?paymentStatus=canceled&`,
-                "failure": `${process.env.WEB_ENDPOINT}/checkout?paymentStatus=failed&`,
+                "success": `${process.env.WEB_ENDPOINT}/${country}/checkout?paymentStatus=approved&`,
+                "cancel": `${process.env.WEB_ENDPOINT}/${country}/checkout?paymentStatus=canceled&`,
+                "failure": `${process.env.WEB_ENDPOINT}/${country}/checkout?paymentStatus=failed&`,
             },
         }
 
