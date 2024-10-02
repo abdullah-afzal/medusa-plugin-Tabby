@@ -178,9 +178,9 @@ class MyPaymentProcessor extends AbstractPaymentProcessor {
             "lang": context.context.lang?context.context.lang:"ar",
             "merchant_code": merchant.merchant_code,
             "merchant_urls": {
-                "success": `${process.env.WEB_ENDPOINT}/${country}/checkout?paymentStatus=approved&`,
-                "cancel": `${process.env.WEB_ENDPOINT}/${country}/checkout?paymentStatus=canceled&`,
-                "failure": `${process.env.WEB_ENDPOINT}/${country}/checkout?paymentStatus=failed&`,
+                "success": `${process.env.TABBY_WEB_ENDPOINT}/${country}/verify/checkout?paymentStatus=approved&`,
+                "cancel": `${process.env.TABBY_WEB_ENDPOINT}/${country}/verify/checkout?paymentStatus=canceled&`,
+                "failure": `${process.env.TABBY_WEB_ENDPOINT}/${country}/verify/checkout?paymentStatus=failed&`,
             },
         }
 
